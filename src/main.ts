@@ -25,12 +25,9 @@ class App {
 }
 
 const model = new App("Peasy UI");
-
+create_app("app-template", model);
 console.dir(model);
 
-window.addEventListener("DOMContentLoaded", () => {
-	create_app("app-template", model);
-	setTimeout(() => {
-		model.name = "John Snow";
-	}, 10_000);
-});
+setTimeout(() => {
+	model.name = "John Snow";
+}, 10_000);
