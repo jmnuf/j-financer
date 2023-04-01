@@ -1,18 +1,22 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@peasy-lib/peasy-ui': ^0.9.32
   '@tauri-apps/api': ^1.2.0
   '@tauri-apps/cli': ^1.2.2
+  '@types/node': ^18.15.11
   typescript: ^4.8.2
   vite: ^4.0.0
 
 dependencies:
+  '@peasy-lib/peasy-ui': 0.9.32
   '@tauri-apps/api': 1.2.0
 
 devDependencies:
   '@tauri-apps/cli': 1.2.3
+  '@types/node': 18.15.11
   typescript: 4.9.5
-  vite: 4.2.1
+  vite: 4.2.1_@types+node@18.15.11
 
 packages:
 
@@ -214,6 +218,11 @@ packages:
     dev: true
     optional: true
 
+  /@peasy-lib/peasy-ui/0.9.32:
+    resolution: {integrity: sha512-FrCvPo376EtwPrK9u0of2jEbzf6HkdlcHNlheur2pmFWylY8Ykg4zqolryr+uRE6KOkq1L9MvN3++ItwkLQl4w==}
+    engines: {node: '>=14.17.0'}
+    dev: false
+
   /@tauri-apps/api/1.2.0:
     resolution: {integrity: sha512-lsI54KI6HGf7VImuf/T9pnoejfgkNoXveP14pVV7XarrQ46rOejIVJLFqHI9sRReJMGdh2YuCoI3cc/yCWCsrw==}
     engines: {node: '>= 14.6.0', npm: '>= 6.6.0', yarn: '>= 1.19.1'}
@@ -314,6 +323,10 @@ packages:
       '@tauri-apps/cli-linux-x64-musl': 1.2.3
       '@tauri-apps/cli-win32-ia32-msvc': 1.2.3
       '@tauri-apps/cli-win32-x64-msvc': 1.2.3
+    dev: true
+
+  /@types/node/18.15.11:
+    resolution: {integrity: sha512-E5Kwq2n4SbMzQOn6wnmBjuK9ouqlURrcZDVfbo9ftDDTFt3nk7ZKK4GMOzoYgnpQJKcxwQw+lGaBvvlMo0qN/Q==}
     dev: true
 
   /esbuild/0.17.14:
@@ -427,7 +440,7 @@ packages:
     hasBin: true
     dev: true
 
-  /vite/4.2.1:
+  /vite/4.2.1_@types+node@18.15.11:
     resolution: {integrity: sha512-7MKhqdy0ISo4wnvwtqZkjke6XN4taqQ2TBaTccLIpOKv7Vp2h4Y+NpmWCnGDeSvvn45KxvWgGyb0MkHvY1vgbg==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
@@ -452,6 +465,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 18.15.11
       esbuild: 0.17.14
       postcss: 8.4.21
       resolve: 1.22.1

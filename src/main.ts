@@ -1,21 +1,36 @@
-import { invoke } from "@tauri-apps/api/tauri";
+// import { invoke } from "@tauri-apps/api/tauri";
+import { create_app } from "./utils/component";
 
-let greetInputEl: HTMLInputElement | null;
-let greetMsgEl: HTMLElement | null;
+class App {
+	title: string;
+	private _name: string;
 
-async function greet() {
-  if (greetMsgEl && greetInputEl) {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    greetMsgEl.textContent = await invoke("greet", {
-      name: greetInputEl.value,
-    });
-  }
+	constructor(title: string, name: string = "") {
+		this.title = title;
+		this._name = "";
+		this.name = name;
+	}
+
+	set name(value: string | null | undefined) {
+		if (typeof value == "string") {
+			this._name = value.trim();
+			return;
+		}
+		this._name = "";
+	}
+
+	get name(): string | null {
+		return this._name && this._name.length > 0 ? this._name : null;
+	}
 }
 
+const model = new App("Peasy UI");
+
+console.dir(model);
+
 window.addEventListener("DOMContentLoaded", () => {
-  greetInputEl = document.querySelector("#greet-input");
-  greetMsgEl = document.querySelector("#greet-msg");
-  document
-    .querySelector("#greet-button")
-    ?.addEventListener("click", () => greet());
+	create_app("app-template", model);
+	setTimeout(() => {
+		model.name = "John Snow";
+	}, 10_000);
 });

@@ -10,11 +10,13 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@peasy-lib/peasy-ui": "^0.9.32",
     "@tauri-apps/api": "^1.2.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.2.2",
-    "vite": "^4.0.0",
-    "typescript": "^4.8.2"
+    "@types/node": "^18.15.11",
+    "typescript": "^4.8.2",
+    "vite": "^4.0.0"
   }
 }
