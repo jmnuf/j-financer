@@ -13,6 +13,8 @@ class TableModel<const L extends number = number> {
 		this.title = title;
 		this.headers = headers;
 		this.rows = [];
+		// @ts-expect-error
+		this.template = Component.template;
 	}
 
 	add_row(...row: SizedArr<TableRowItemValue, L>) {

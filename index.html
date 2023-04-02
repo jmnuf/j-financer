@@ -7,7 +7,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Tauri App</title>
 	<script type="module" src="/src/main.ts" defer></script>
-	<script type="module" src="/src/main.data.ts" defer></script>
 </head>
 
 <body>
@@ -31,18 +30,20 @@
 				Display information on a table
 			-------------------------------------->
 		<div class="container mx-auto">
-			<h3 class="text-xl">${title}</h3>
+			<!-- <h3 class="text-xl">${title}</h3> -->
 			<section class="container mx-auto">
 				<table class="table table-auto w-full outline outline-2 outline-violet-950 rounded bg-slate-200">
 					<thead class="border border-b-2 border-slate-800 border-opacity-50 bg-slate-400">
 						<tr>
-							<th class="border-r border-solid border-r-black last:border-r-0" pui="value <=* headers">${value}</th>
+							<th>Header</th>
+							<!-- <th class="border-r border-solid border-r-black last:border-r-0" pui="value <=* headers">${value}</th> -->
 						</tr>
 					</thead>
 					<tbody>
-						<tr class="border-b-2 border-dashed border-b-slate-600 border-opacity-25" pui="data <=* rows">
-							<td class="border-r border-solid border-r-black last:border-r-0" pui="=== data;value <=* data">${value}</td>
-						</tr>
+						<!-- <tr class="border-b-2 border-dashed border-b-slate-600 border-opacity-25" pui="data <=* rows">
+							<td class="border-r border-solid border-r-black last:border-r-0" pui="=== data;value <=* data">${value}
+							</td>
+						</tr> -->
 					</tbody>
 				</table>
 			</section>

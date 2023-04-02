@@ -2,11 +2,10 @@ import { UI } from "@peasy-lib/peasy-ui";
 
 export const config = {
 	parent: document.getElementById("pui-app"),
-	components: {} as Record<string, PUIComponent<unknown>>
 }
 
 export type PUI_Template = string | HTMLTemplateElement;
-type Class = { new(...args: any[]): unknown; };
+type Class = { new(...args: any[]): unknown };
 // type ClassInstance<C extends Class> = C extends { new(...args: unknown[]): infer T; } ? T : never;
 
 type PUI_HTMLComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: HTMLTemplateElement; };
@@ -43,8 +42,6 @@ export function setup_component<C extends Class>(Cls: C, template:string): PUICo
 	} else {
 		Component.template = template;
 	}
-
-	config.components[Cls.name] = Component;
 
 	return Component;
 }
