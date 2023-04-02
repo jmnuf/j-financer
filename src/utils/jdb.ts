@@ -1,25 +1,42 @@
 import { exists, BaseDirectory as Dir, writeFile, createDir, readTextFile as readFile } from "@tauri-apps/api/fs";
-import { appDataDir } from '@tauri-apps/api/path';
 
-export const app_dir = await appDataDir();
-console.log(app_dir);
+export type BaseModel = Record<string, string | number | string[] | number[]> & { id: string; };
+export type BaseData<T extends BaseModel> = Omit<T, "id">
 
-type BaseModel = Record<string, string | number | string[] | number[]> & { id: string; };
-type BaseData<T extends BaseModel> = Omit<T, "id">
+type IterValue<T extends Iterable<unknown>> = T extends Iterable<infer V> ? V : never;
 
-const test1 = {
-	id: "T00001",
-	name: "John",
-	age: 32,
-};
-const test2 = {
-	name: "John",
-	age: 32,
-	id: test1.id,
-} as BaseData<typeof test1>;
-test2.name
+export type CustomIterator<V> = { (): Generator<V, void> } & { to_array(): V[]; };
 
-class JDB<T extends BaseModel, const F extends string, const P extends string, TBase extends BaseData<T> = BaseData<T>> {
+export function createCustomIterator<T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T): CustomIterator<V>;
+export function createCustomIterator<K extends keyof V, T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T, key: K): CustomIterator<V[K]>;
+export function createCustomIterator<const K extends keyof V, T extends Iterable<any> = Iterable<any>, V extends IterValue<T> = IterValue<T>>(data: T, key?: K): CustomIterator<V|V[K]> {
+	const generator = function* () {
+		for (const value of data) {
+			if (key == undefined) {
+				yield value;
+				continue;
+			}
+			yield value[key];
+		}
+	}.bind(data) as unknown as CustomIterator<V | V[K]>;
+	
+	generator.to_array = function () {
+		const list: (V | V[K])[] = [];
+		for (const subdata of data) {
+			if (key == undefined) {
+				list.push(subdata);
+				continue;
+			}
+
+			list.push(subdata[key]);
+		}
+		return list;
+	}.bind(data);
+	
+	return generator;
+}
+
+export class JDB<T extends BaseModel, const F extends string, const P extends string, TBase extends BaseData<T> = BaseData<T>> {
 	private file: `jdb/${F}.jdb`;
 	private prefix: P;
 	private count: number = 0;
@@ -53,6 +70,21 @@ class JDB<T extends BaseModel, const F extends string, const P extends string, T
 		const id = this.create_id(num);
 		return this.data.has(id);
 	}
+
+	get entries() {
+		return createCustomIterator(this.data);
+	}
+
+	[Symbol.iterator]() {
+		return this.data[Symbol.iterator]
+	}
+
+	get ids() {
+		return createCustomIterator(this.data, 0);
+	}
+	get values() {
+		return createCustomIterator(this.data, 1);
+	}
 	
 	protected async readFile() {
 		try {
@@ -66,8 +98,9 @@ class JDB<T extends BaseModel, const F extends string, const P extends string, T
 	async update_external() {
 		let contents = `@${this.count}\n`;
 		for (const [id, data] of this.data.entries()) {
-			contents += `${id};${JSON.stringify(data)}`;
+			contents += `${id};${JSON.stringify(data)}\n`;
 		}
+		contents = contents.substring(0, contents.length - 1);
 		try {
 			await writeFile(this.file, contents, { dir: Dir.AppData });
 			return true;
@@ -108,13 +141,13 @@ class JDB<T extends BaseModel, const F extends string, const P extends string, T
 	}
 }
 
-type Artist = {
+export type Artist = {
 	id: `ATR${string}`;
 	band_name: string;
 	full_names: string[];
 };
 
-type ReachSnapshot = {
+export type ReachSnapshot = {
 	id: `RCH${string}`;
 	artist: string;
 	reach: number;

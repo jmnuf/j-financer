@@ -1,4 +1,4 @@
-import { artists } from "./utils/data-reader";
+import { artists } from "./utils/jdb";
 
 let jm = artists.retrieve(0);
 if (!jm) {
@@ -9,7 +9,23 @@ if (!jm) {
 	artists.update_external();
 	console.log("Created __JM__ register");
 } else {
-	console.log("Found register 0");
+	console.log("Found register 0", jm);
 }
 
-console.log(jm);
+let simplicity = artists.retrieve(1);
+if (!simplicity) {
+	simplicity = artists.insert({
+		band_name: "Simplicity",
+		full_names: ["Victor Josue Ferrufino Median"]
+	});
+	artists.update_external();
+	console.log("Created Simplicity register");
+} else {
+	console.log("Found register 1", simplicity);
+}
+
+export {
+	jm,
+	simplicity,
+	artists,
+};

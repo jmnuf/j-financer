@@ -1,8 +1,11 @@
 // import { invoke } from "@tauri-apps/api/tauri";
 import { create_app } from "./utils/component";
+import { artists } from "./main.data";
+import type { Artist } from "./utils/jdb";
 
 class App {
 	title: string;
+	artists:Artist[] = [];
 	private _name: string;
 
 	constructor(title: string, name: string = "") {
@@ -22,12 +25,14 @@ class App {
 	get name(): string | null {
 		return this._name && this._name.length > 0 ? this._name : null;
 	}
+
+	get greeting() {
+		return `Welcome ${this.name}`;
+	}
 }
 
-const model = new App("Peasy UI");
+const model = new App("Financer", "J");
 create_app("app-template", model);
 console.dir(model);
 
-setTimeout(() => {
-	model.name = "John Snow";
-}, 10_000);
+model.artists = artists.values.to_array();
