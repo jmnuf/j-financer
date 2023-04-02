@@ -20,7 +20,7 @@ class App {
 	add_artist(art: Artist) {
 		return this.artists.add_row(art.id, art.band_name, art.band_name);
 	}
-
+	
 	set name(value: string | null | undefined) {
 		if (typeof value == "string") {
 			this._name = value.trim();
@@ -46,8 +46,8 @@ const model = new App("Financer", "J");
 create_app("app-template", model);
 console.dir(model);
 
+
 for (const artist of artists.values()) {
 	console.log("Add row", artist);
 	model.add_artist(artist);
 }
-
