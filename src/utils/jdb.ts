@@ -5,7 +5,12 @@ export type BaseData<T extends BaseModel> = Omit<T, "id">
 
 type IterValue<T extends Iterable<unknown>> = T extends Iterable<infer V> ? V : never;
 
-export type CustomIterator<V> = { (): Generator<V, void> } & { to_array(): V[]; };
+type FilterMapPredicate<T, R> = (value: T, index: number) => R | undefined;
+
+export type CustomIterator<V> = { (): Generator<V, void>; } & {
+	to_array(): V[];
+	to_array<R>(predicate: FilterMapPredicate<V, R>): R[];
+};
 
 export function createCustomIterator<T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T): CustomIterator<V>;
 export function createCustomIterator<K extends keyof V, T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T, key: K): CustomIterator<V[K]>;
@@ -20,15 +25,22 @@ export function createCustomIterator<const K extends keyof V, T extends Iterable
 		}
 	}.bind(data) as unknown as CustomIterator<V | V[K]>;
 	
-	generator.to_array = function () {
-		const list: (V | V[K])[] = [];
+	generator.to_array = function <R>(predicate?: FilterMapPredicate<V | V[K], R>) {
+		const list: ((V | V[K])[] | R[]) = [];
+		let i = 0;
 		for (const subdata of data) {
-			if (key == undefined) {
-				list.push(subdata);
+			const value = key == undefined ? subdata : subdata[key];
+			if (predicate == null) {
+				list.push(value);
+				continue;
+			}
+			const mapped = predicate(value, i);
+			i += 1;
+			if (mapped === undefined) {
 				continue;
 			}
 
-			list.push(subdata[key]);
+			list.push(mapped);
 		}
 		return list;
 	}.bind(data);
@@ -71,19 +83,12 @@ export class JDB<T extends BaseModel, const F extends string, const P extends st
 		return this.data.has(id);
 	}
 
-	get entries() {
-		return createCustomIterator(this.data);
-	}
-
+	readonly entries = createCustomIterator(this.data);
+	readonly ids = createCustomIterator(this.data, 0);
+	readonly values = createCustomIterator(this.data, 1);
+	
 	[Symbol.iterator]() {
-		return this.data[Symbol.iterator]
-	}
-
-	get ids() {
-		return createCustomIterator(this.data, 0);
-	}
-	get values() {
-		return createCustomIterator(this.data, 1);
+		return this.data[Symbol.iterator]()
 	}
 	
 	protected async readFile() {
