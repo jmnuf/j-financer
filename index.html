@@ -21,24 +21,7 @@
 			-------------------------------------->
 		<h1 class="text-4xl">${title}</h1>
 		<h2 class="text-2xl">${greeting}</h2>
-		<section class="container mx-auto">
-			<table class="table table-auto w-full outline outline-2 outline-violet-950 rounded bg-slate-200">
-				<thead class="border border-b-2 border-slate-800 border-opacity-50 bg-slate-400">
-					<tr>
-						<th class="border-r border-solid border-r-black">ID</th>
-						<th class="border-r border-solid border-r-black">Artist Name</th>
-						<th>Full Name(s)</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr class="border-b-2 border-dashed border-b-slate-600 border-opacity-25" pui="a <=* artists">
-						<td class="border-r border-solid border-r-black">${a.id}</td>
-						<td class="border-r border-solid border-r-black">${a.band_name}</td>
-						<td>${a.full_names}</td>
-					</tr>
-				</tbody>
-			</table>
-		</section>
+		<div pui="artists ==="></div>
 	</template>
 
 
@@ -58,7 +41,7 @@
 					</thead>
 					<tbody>
 						<tr class="border-b-2 border-dashed border-b-slate-600 border-opacity-25" pui="data <=* rows">
-							<td class="border-r border-solid border-r-black last:border-r-0" pui="value <=* data">${value}</td>
+							<td class="border-r border-solid border-r-black last:border-r-0" pui="=== data;value <=* data">${value}</td>
 						</tr>
 					</tbody>
 				</table>

@@ -4,10 +4,11 @@ export type TableRowItemValue = string | number | string[] | number[];
 export type TableRow = TableRowItemValue[];
 export type SizedArr<T, L extends number> = [...T[]] & { length: L; };
 
-class _Table<const L extends number = number> {
+class TableModel<const L extends number = number> {
 	title: string;
 	headers: SizedArr<string, L>;
-	rows: TableRow[]
+	rows: TableRow[];
+	
 	constructor(title: string, ...headers: SizedArr<string, L>) {
 		this.title = title;
 		this.headers = headers;
@@ -21,6 +22,9 @@ class _Table<const L extends number = number> {
 	set_headers(...headers: SizedArr<string, L>) {
 		this.headers = headers;
 	}
-}
 
-export const Table = setup_component(_Table, "#table-template");
+}
+export type Model<Length extends number> = TableModel<Length>;
+
+const Component = setup_component(TableModel, "#table-template");
+export default Component;

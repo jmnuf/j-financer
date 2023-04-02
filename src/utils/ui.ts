@@ -5,7 +5,8 @@ export const config = {
 	components: {} as Record<string, PUIComponent<unknown>>
 }
 
-type Class = { new(...args: any[]): unknown; }
+export type PUI_Template = string | HTMLTemplateElement;
+type Class = { new(...args: any[]): unknown; };
 // type ClassInstance<C extends Class> = C extends { new(...args: unknown[]): infer T; } ? T : never;
 
 type PUI_HTMLComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: HTMLTemplateElement; };
@@ -32,13 +33,13 @@ export function setup_component<C extends Class>(Cls: C, template: string): PUI_
 export function setup_component<C extends Class>(Cls: C, template:string): PUIComponent<C> {
 	// @ts-expect-error
 	const Component: PUIComponent<C> = Cls;
-
 	if (template.startsWith('#')) {
 		const elem = document.querySelector(template);
 		if (!(elem instanceof HTMLTemplateElement)) {
 			throw new TypeError("Expected a template element for setting up the component");
 		}
 		Component.template = elem;
+		elem.remove();
 	} else {
 		Component.template = template;
 	}
