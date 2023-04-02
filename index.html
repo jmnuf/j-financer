@@ -1,50 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<link rel="stylesheet" href="/src/styles.css" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Tauri App</title>
-		<script type="module" src="/src/main.ts" defer></script>
-		<script type="module" src="/src/main.data.ts" defer></script>
-	</head>
 
-	<body>
-		<div id="pui-app" class="container mx-auto justify-center align-middle text-center">
-		</div>
+<head>
+	<meta charset="UTF-8" />
+	<link rel="stylesheet" href="/src/styles.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Tauri App</title>
+	<script type="module" src="/src/main.ts" defer></script>
+	<script type="module" src="/src/main.data.ts" defer></script>
+</head>
 
-		
-		<template id="app-template">
-			<!------------------------------------- 
+<body>
+	<div id="pui-app" class="container mx-auto justify-center align-middle text-center">
+	</div>
+
+
+	<template id="app-template">
+		<!------------------------------------- 
 				Main App 
 			-------------------------------------->
-			<h1 class="text-4xl">${title}</h1>
-			<h2 class="text-2xl">${greeting}</h2>
+		<h1 class="text-4xl">${title}</h1>
+		<h2 class="text-2xl">${greeting}</h2>
+		<section class="container mx-auto">
+			<table class="table table-auto w-full outline outline-2 outline-violet-950 rounded bg-slate-200">
+				<thead class="border border-b-2 border-slate-800 border-opacity-50 bg-slate-400">
+					<tr>
+						<th class="border-r border-solid border-r-black">ID</th>
+						<th class="border-r border-solid border-r-black">Artist Name</th>
+						<th>Full Name(s)</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="border-b-2 border-dashed border-b-slate-600 border-opacity-25" pui="a <=* artists">
+						<td class="border-r border-solid border-r-black">${a.id}</td>
+						<td class="border-r border-solid border-r-black">${a.band_name}</td>
+						<td>${a.full_names}</td>
+					</tr>
+				</tbody>
+			</table>
+		</section>
+	</template>
+
+
+	<template id="table-template">
+		<!------------------------------------- 
+				Table Component
+				Display information on a table
+			-------------------------------------->
+		<div class="container mx-auto">
+			<h3 class="text-xl">${title}</h3>
 			<section class="container mx-auto">
 				<table class="table table-auto w-full outline outline-2 outline-violet-950 rounded bg-slate-200">
 					<thead class="border border-b-2 border-slate-800 border-opacity-50 bg-slate-400">
 						<tr>
-							<th class="border-r border-solid border-r-black">ID</th>
-							<th class="border-r border-solid border-r-black">Artist Name</th>
-							<th>Full Name(s)</th>
+							<th class="border-r border-solid border-r-black last:border-r-0" pui="value <=* headers">${value}</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr class="border-b-2 border-dashed border-b-slate-600 border-opacity-25" pui="a <=* artists">
-							<td class="border-r border-solid border-r-black">${a.id}</td>
-							<td class="border-r border-solid border-r-black">${a.band_name}</td>
-							<td>${a.full_names}</td>
+						<tr class="border-b-2 border-dashed border-b-slate-600 border-opacity-25" pui="data <=* rows">
+							<td class="border-r border-solid border-r-black last:border-r-0" pui="value <=* data">${value}</td>
 						</tr>
 					</tbody>
 				</table>
 			</section>
-		</template>
+		</div>
+	</template>
+</body>
 
-
-		<template>
-			<!------------------------------------- 
-				Component
-			-------------------------------------->
-		</template>
-	</body>
 </html>

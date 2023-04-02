@@ -5,10 +5,12 @@ export const config = {
 	components: {} as Record<string, PUIComponent<unknown>>
 }
 
-type Class = { new(...args: unknown[]): unknown; }
+type Class = { new(...args: any[]): unknown; }
 // type ClassInstance<C extends Class> = C extends { new(...args: unknown[]): infer T; } ? T : never;
 
-type PUIComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: HTMLTemplateElement|string; };
+type PUI_HTMLComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: HTMLTemplateElement; };
+type PUI_JSComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: string; };
+type PUIComponent<C extends Class | unknown> = PUI_HTMLComponent<C> | PUI_JSComponent<C>;
 
 export function create_app<T extends {}>(id: string, model: T) {
 	const parent = config.parent;
@@ -25,6 +27,8 @@ export function create_app<T extends {}>(id: string, model: T) {
 	return [view, model, elem] as const;
 }
 
+export function setup_component<C extends Class>(Cls: C, template: `#${string}`): PUI_HTMLComponent<C>;
+export function setup_component<C extends Class>(Cls: C, template: string): PUI_JSComponent<C>;
 export function setup_component<C extends Class>(Cls: C, template:string): PUIComponent<C> {
 	// @ts-expect-error
 	const Component: PUIComponent<C> = Cls;

@@ -1,5 +1,5 @@
 // import { invoke } from "@tauri-apps/api/tauri";
-import { create_app } from "./utils/component";
+import { create_app } from "./utils/ui";
 import { artists } from "./main.data";
 import type { Artist } from "./utils/jdb";
 
