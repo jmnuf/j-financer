@@ -1,4 +1,5 @@
 import { UI } from "@peasy-lib/peasy-ui";
+import { RemoveArrayRepeats } from "./more-types";
 
 export const config = {
 	parent: document.getElementById("pui-app"),
@@ -6,13 +7,13 @@ export const config = {
 
 export type PUI_Template = string | HTMLTemplateElement;
 type Class = { new(...args: any[]): unknown };
-// type ClassInstance<C extends Class> = C extends { new(...args: unknown[]): infer T; } ? T : never;
+type ClassInstance<C extends Class> = C extends { new(...args: any[]): infer T; } ? T : never;
 
 type PUI_HTMLComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: HTMLTemplateElement; };
 type PUI_JSComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: string; };
 type PUIComponent<C extends Class | unknown> = PUI_HTMLComponent<C> | PUI_JSComponent<C>;
 
-export function create_app<T extends {}>(id: string, model: T) {
+export function create_app<T extends {}>(id: string, model: T, manual_updates:boolean = false) {
 	const parent = config.parent;
 	if (!parent) {
 		throw new Error("Parent Element #pui-element doesn't exist");
@@ -21,15 +22,24 @@ export function create_app<T extends {}>(id: string, model: T) {
 	if (!(elem instanceof HTMLTemplateElement)) {
 		throw new TypeError(`Expected elment with #${id} to be a template HTML element`);
 	}
-	const view = UI.create(parent, elem, model);
-	elem.remove();
+	
+	if (manual_updates) {
+		UI.initialize(false);
+	}
 
+	const view = UI.create(parent, elem, model);
+	
+	if (manual_updates) {
+		UI.update();
+	}
+	
+	elem.remove();
 	return [view, model, elem] as const;
 }
 
-export function setup_component<C extends Class>(Cls: C, template: `#${string}`): PUI_HTMLComponent<C>;
+export function setup_component<C extends Class>(Cls: C, template: `#${string}`, remove?:boolean): PUI_HTMLComponent<C>;
 export function setup_component<C extends Class>(Cls: C, template: string): PUI_JSComponent<C>;
-export function setup_component<C extends Class>(Cls: C, template:string): PUIComponent<C> {
+export function setup_component<C extends Class>(Cls: C, template:string, remove = true): PUIComponent<C> {
 	// @ts-expect-error
 	const Component: PUIComponent<C> = Cls;
 	if (template.startsWith('#')) {
@@ -38,10 +48,117 @@ export function setup_component<C extends Class>(Cls: C, template:string): PUICo
 			throw new TypeError("Expected a template element for setting up the component");
 		}
 		Component.template = elem;
-		elem.remove();
+		if (remove) {
+			elem.remove();
+		}
 	} else {
 		Component.template = template;
 	}
 
 	return Component;
+}
+
+export function update_on_keys<T extends Record<string, any>, Keys extends (keyof T)[]>(model: T, keys: RemoveArrayRepeats<Keys>) {
+	const observed = {}
+	for (const k of Object.keys(model) as (keyof T)[]) {
+		if (!keys.includes(k)) {
+			Object.defineProperty(observed, k, {
+				set(value: T[keyof T]) {
+					model[k] = value;
+				},
+				get() {
+					return model[k];
+				}
+			});
+			continue;
+		}
+		Object.defineProperty(observed, k, {
+			set(value: T[keyof T]) {
+				model[k] = value;
+				UI.update();
+			},
+			get() {
+				return model[k];
+			},
+		});
+	}
+	return observed as T;
+}
+
+export type BasePuiComponentParams<C extends Class> = {
+	readonly Cls: C,
+	readonly template: `#${string}`;
+	readonly is_app?: boolean,
+	readonly observe?: {
+		readonly keys: readonly Exclude<keyof ClassInstance<C>, symbol>[];
+		readonly dont_define?: readonly Exclude<keyof ClassInstance<C>, symbol>[];
+	};
+
+}
+
+export class PuiComponent<C extends Class> {
+	static template: HTMLTemplateElement;
+	// @ts-expect-error
+	private template: HTMLTemplateElement;
+	constructor({ Cls, template, observe, is_app }: BasePuiComponentParams<C>) {
+		if ("template" in Cls && Cls.template instanceof HTMLTemplateElement) {
+			this.template = Cls.template;
+			return;
+		}
+
+		const C = setup_component(Cls, template, !is_app);
+		this.template = C.template;
+		if (!observe) {
+			return;
+		}
+		for (const key of observe.keys) {
+			const private_key = `_${key}`;
+			let set, get;
+			if (private_key in this) {
+				const desc = Object.getOwnPropertyDescriptor(this, private_key)!;
+				if (desc.get) {
+					get = desc.get;
+				}
+				if (desc.set) {
+					set = desc.set;
+				}
+				desc.enumerable = false;
+			} else if (observe.dont_define == null || !observe.dont_define.includes(key)) {
+				console.log(`Defining missing private key: "${private_key}"`);
+				Object.defineProperty(this, private_key, {
+					value: 0,
+					writable: true,
+					configurable: true,
+					enumerable: false,
+				});
+			}
+			if (!set) {
+				set = (value: unknown) => {
+					// @ts-ignore
+					this[private_key] = value;
+					UI.update();
+				}
+			} else {
+				const original_setter = set;
+				set = function(this: C, value: unknown) {
+					original_setter.call(this, value);
+					UI.update();
+				}
+			}
+			if (!get) {
+				// @ts-ignore
+				get = () => this[private_key];
+			}
+			console.log(`Base key: "${key}"`);
+			console.log(`Priv key: "${private_key}"`);
+			Object.defineProperty(this, key, {
+				set, get,
+				enumerable: true,
+			});
+		}
+	}
+
+	request_ui_update() {
+		UI.update();
+	}
 }
