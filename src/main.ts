@@ -18,9 +18,9 @@ class App {
 	}
 
 	add_artist(art: Artist) {
-		return this.artists.add_row(art.id, art.band_name, art.band_name);
+		return this.artists.add_row(art.id, art.band_name, art.full_names);
 	}
-	
+
 	set name(value: string | null | undefined) {
 		if (typeof value == "string") {
 			this._name = value.trim();
