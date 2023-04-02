@@ -13,6 +13,7 @@ class App extends PuiComponent<typeof App> {
 	private title;
 	readonly tables;
 	private _name;
+	table_names: AppTableNames[];
 	declare active_name: AppTableNames;
 	private active_table;
 
@@ -37,19 +38,11 @@ class App extends PuiComponent<typeof App> {
 			artists,
 			reaches,
 		});
+		this.table_names = Object.keys(this.tables) as AppTableNames[];
 		
 		// This is works with automatic updates
-		// this.active_table = new Table<string[], Record<string, any>>(artists.title, manual, ...artists.headers);
-		// this.active_table.rows = artists.rows;
-
-		// This on manual updates extends the table instead of changing the data
-		type Models = AppTables[AppTableNames];
-		this.active_table = {
-			template: Table.template,
-			title: artists.title as Models["title"],
-			headers: artists.headers as Models["headers"],
-			rows: artists.rows as Models["rows"],
-		};
+		this.active_table = new Table<string[], Record<string, any>>(artists.title, manual, ...artists.headers);
+		this.active_table.rows = artists.rows;
 	}
 
 	set_active_table(table_name: AppTableNames) {
@@ -74,6 +67,16 @@ class App extends PuiComponent<typeof App> {
 	add_reach_snapshot(snapshot: ReachSnapshot) {
 		const reaches = this.tables.reaches;
 		return reaches.add_row(snapshot.id, snapshot.artist, snapshot.income, snapshot.timestamp);
+	}
+
+	// @ts-expect-error
+	private on_table_btn_clicked = (event:PointerEvent) => {
+		const target = event.target as HTMLButtonElement;
+		const text = target.innerText;
+		if (this.active_name == text) {
+			return;
+		}
+		this.set_active_table(text as AppTableNames);
 	}
 
 	get is_artists_active() {
@@ -129,14 +132,3 @@ for (const snapshot of reach.values()) {
 create_app("app-template", app, manual);
 console.dir(app);
 
-const tables = Object.keys(app.tables) as AppTableNames[];
-let index = 0;
-
-setInterval(() => {
-// setTimeout(() => {
-	index = (index + 1) % tables.length;
-	const table = tables[index];
-	app.set_active_table(table);
-	// @ts-ignore
-	console.log("switch to", table, app.active_table);
-}, 5_000);
