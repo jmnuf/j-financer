@@ -14,7 +14,7 @@ class TableModel<const L extends number = number> {
 		this.headers = headers;
 		this.rows = [];
 		// @ts-expect-error
-		this.template = Component.template;
+		this.template = TableModel.template;
 	}
 
 	add_row(...row: SizedArr<TableRowItemValue, L>) {
@@ -28,5 +28,4 @@ class TableModel<const L extends number = number> {
 }
 export type Model<Length extends number> = TableModel<Length>;
 
-const Component = setup_component(TableModel, "#table-template");
-export default Component;
+export default setup_component(TableModel, "#table-template");
