@@ -1,8 +1,13 @@
 import { UI } from "@peasy-lib/peasy-ui";
 import { RemoveArrayRepeats } from "./more-types";
 
+let updating = false;
+let updating_timeout: ReturnType<typeof setTimeout>;
 export const config = {
 	parent: document.getElementById("pui-app"),
+	get updating() {
+		return updating;
+	},
 }
 
 export type PUI_Template = string | HTMLTemplateElement;
@@ -25,6 +30,21 @@ export function create_app<T extends {}>(id: string, model: T, manual_updates:bo
 	
 	if (manual_updates) {
 		UI.initialize(false);
+		// Throttle updates
+		const true_updater = UI.update;
+		UI.update = () => {
+			if (updating) {
+				clearTimeout(updating_timeout);
+				updating_timeout = setTimeout(() => {
+					updating = false;
+					UI.update();
+				}, 50);
+				return;
+			}
+			updating = true;
+			true_updater.call(UI);
+			updating_timeout = setTimeout(() => updating = false, 50);
+		}
 	}
 
 	const view = UI.create(parent, elem, model);

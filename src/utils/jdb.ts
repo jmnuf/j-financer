@@ -147,7 +147,7 @@ export class JDB<T extends BaseModel, const F extends string, const P extends st
 }
 
 export type Artist = {
-	id: `ATR${string}`;
+	id: `ART${string}`;
 	band_name: string;
 	full_names: string[];
 };

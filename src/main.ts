@@ -1,6 +1,6 @@
 // import { invoke } from "@tauri-apps/api/tauri";
 import { PuiComponent, create_app } from "./utils/ui";
-import { artists, reach } from "./utils/jdb";
+// import { artists, reach } from "./utils/jdb";
 import type { Artist, ReachSnapshot } from "./utils/jdb";
 import Table from "./components/table";
 
@@ -32,7 +32,7 @@ class App extends PuiComponent<typeof App> {
 		const artists = new Table<["ID", "Band_Name", "Full_Names"], Artist>("Artists", "ID", "Band_Name", "Full_Names");
 		this.active_name = "artists";
 
-		const reaches = new Table<["ID", "Artist", "Income", "TimeStamp"], ReachSnapshot>("Artist Reach", "ID", "Artist", "Income", "TimeStamp");
+		const reaches = new Table<["ID", "Artist", "Reach", "Income", "TimeStamp"], ReachSnapshot>("Artist Reach", "ID", "Artist", "Reach", "Income", "TimeStamp");
 
 		this.tables = Object.freeze({
 			artists,
@@ -40,7 +40,6 @@ class App extends PuiComponent<typeof App> {
 		});
 		this.table_names = Object.keys(this.tables) as AppTableNames[];
 		
-		// This is works with automatic updates
 		this.active_table = new Table<string[], Record<string, any>>(artists.title, manual, ...artists.headers);
 		this.active_table.rows = artists.rows;
 	}
@@ -59,14 +58,12 @@ class App extends PuiComponent<typeof App> {
 
 	add_artist(art: Artist) {
 		const artists = this.tables.artists;
-		const r = artists.add_row(art.id, art.band_name, art.full_names);
-		this.request_ui_update();
-		return r;
+		return artists.add_row(art.id, art.band_name, art.full_names);
 	}
 
 	add_reach_snapshot(snapshot: ReachSnapshot) {
 		const reaches = this.tables.reaches;
-		return reaches.add_row(snapshot.id, snapshot.artist, snapshot.income, snapshot.timestamp);
+		return reaches.add_row(snapshot.id, snapshot.artist, snapshot.reach, snapshot.income, snapshot.timestamp);
 	}
 
 	// @ts-expect-error
@@ -74,7 +71,7 @@ class App extends PuiComponent<typeof App> {
 		const target = event.target as HTMLButtonElement;
 		const text = target.innerText;
 		if (this.active_name == text) {
-			return;
+			// return;
 		}
 		this.set_active_table(text as AppTableNames);
 	}
@@ -113,19 +110,68 @@ class App extends PuiComponent<typeof App> {
 
 const app = new App("Financer", "J");
 
-for (const artist of artists.values()) {
-	console.log("Add row", artist);
+const test_data_artists: Artist[] = [
+	{ id: "ART000000", band_name: "NF", full_names: ["Nathan Feuerstein"] },
+	{ id: "ART000001", band_name: "Eminem", full_names: ["Marshal Mathers"] },
+	{ id: "ART000002", band_name: "Nach", full_names: ["Ignacio Fornés Olmo"] },
+];
+for (const artist of test_data_artists) {
 	app.add_artist(artist);
+}
+
+// for (const artist of artists.values()) {
+// 	console.log("Add row", artist);
+// 	app.add_artist(artist);
+// }
+
+const create_random_snapshot = (): ReachSnapshot => {
+	// @ts-expect-error
+	const index:number = create_random_snapshot.index ? create_random_snapshot.index : 0;
+	// @ts-expect-error
+	create_random_snapshot.index = index + 1;
+	// @ts-expect-error
+	const timestamp: number = create_random_snapshot.timestamp ?? Date.now() - Math.floor(Math.random() * 100_420_000 + 69_000_000);
+	// @ts-expect-error
+	create_random_snapshot.timestamp = timestamp - Math.floor(Math.random() * 1_000_000 + 1_000);
+
+	const artist_count = app.tables.artists.rows.length;
+	const artist = app.tables.artists.rows[Math.floor(Math.random() * artist_count)][0];
+
+	return {
+		id: `RCH${`${index}`.padStart(6, "0")}`,
+		artist,
+		income: new Number(Math.floor(Math.random() * 5_000) + 1_000) as number,
+		reach: new Number(Math.floor(Math.random() * 69_000)) as number,
+		timestamp: new Number(timestamp) as number,
+	} as ReachSnapshot;
+};
+const test_data_reaches: ReachSnapshot[] = [
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+	create_random_snapshot(),
+];
+for (const snapshot of test_data_reaches) {
+	app.add_reach_snapshot(snapshot);
 }
 
 const active = app.tables[app.active_name];
 console.log(active);
 
 
-for (const snapshot of reach.values()) {
-	console.log("Add reach snapshot", snapshot);
-	app.add_reach_snapshot(snapshot);
-}
+// for (const snapshot of reach.values()) {
+// 	console.log("Add reach snapshot", snapshot);
+// 	app.add_reach_snapshot(snapshot);
+// }
 
 
 
