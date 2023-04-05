@@ -96,7 +96,7 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 			return { ok: true, inserted } as const;
 		} catch (e) {
 			console.error(e);
-			return { ok: false, inserted: null, error: e } as const;
+			return { ok: false, inserted: null, error: e as Error } as const;
 		}
 	}
 

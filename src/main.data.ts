@@ -44,12 +44,12 @@ await (async () => {
 		}))
 	});
 	
-	const result = schema.safeParse(JSON.parse(data_string));
-	if (!result.success) {
-		console.error("Failed to parse data!", result.error.issues)
+	const parse_result = schema.safeParse(JSON.parse(data_string));
+	if (!parse_result.success) {
+		console.error("Failed to parse data!", parse_result.error.issues)
 		return;
 	}
-	const snapshot = result.data;
+	const snapshot = parse_result.data;
 
 	console.log("Snapshot data from", snapshot.date);
 	console.log("Save data from", sales.meta_data.from);
@@ -57,6 +57,7 @@ await (async () => {
 		console.log("Aborting the parsing of snapshot. Current data is of the same date");
 		return;
 	}
+	const inserts_result = { ok: true, failed: [] as { artist: string, err: Error }[] };
 	for (const data of snapshot.data) {
 		const artist = artists.find_by("band_name", data["Artist"]);
 		if (artist == -1) {
@@ -74,10 +75,25 @@ await (async () => {
 			earnings: data["Earnings (USD)"],
 			quantity: data["Quantity"],
 		});
-		console.log(result);
+		if (result.ok) {
+			continue;
+		}
+
+		inserts_result.failed.push({ artist, err: result.error });
 	}
 	sales.meta_data.from = snapshot.date;
 	console.log("Loaded data from", sales.meta_data.from);
+	if (!inserts_result.ok) {
+		console.error("Failed to insert all saved values\n", inserts_result.failed);
+		console.warn("Not updating local sales file because of insert errors");
+		return;
+	}
+	const udpated = await sales.update_external();
+	if (udpated) {
+		console.log("Succesfully updated the local sales save");
+	} else {
+		console.error("Failed to update the local sales save");
+	}
 })();
 
 export {
