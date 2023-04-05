@@ -36,5 +36,5 @@ export type Sales = z.infer<typeof sale_schema>;
 
 export type SalesMetaData = {
 	// Month-Day-Year
-	from: `${string}-${number}-${number}`;
+	from: string;
 };

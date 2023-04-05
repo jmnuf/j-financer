@@ -11,7 +11,7 @@ type KeyToH<T extends string | number> = AllStringCasings<T> | (
 );
 
 class TableModel<
-	T extends Record<KeysOfH<H>, TableRowItemValue>,
+	T extends Record<KeysOfH<H[]>, TableRowItemValue>,
 	H extends `${KeyToH<Exclude<keyof T, symbol>>}` = `${KeyToH<Exclude<keyof T, symbol>>}`,
 	const L extends number = number
 > extends PuiComponent<typeof TableModel> {
@@ -19,9 +19,9 @@ class TableModel<
 	headers: SizedArr<string, L>;
 	rows: TableRow<L>[];
 	
-	constructor(title:string, manual_updates:boolean, ...headers: H[]);
+	constructor(title:string, manual_updates:boolean, ...headers: SizedArr<H, L>);
 	constructor(title:string, ...headers: H[]);
-	constructor(title: string, ...headers: H[] | [boolean, ...H[]]) {
+	constructor(title: string, ...headers: SizedArr<H, L> | [boolean, ...SizedArr<H, L>]) {
 		const manual = typeof headers[0] === "boolean" && headers.shift() ? true : false;
 		super({
 			Cls: TableModel, template: "#table-template",
@@ -30,7 +30,7 @@ class TableModel<
 			},
 		});
 		this.title = title;
-		this.headers = (headers as H).map(val => val.trim().replaceAll("_", " ")) as H;
+		this.headers = (headers as SizedArr<H, L>).map(val => val.trim().replaceAll("_", " ")) as SizedArr<H, L>;
 		this.rows = [];
 		// @ts-expect-error
 		this.template = TableModel.template;
@@ -39,8 +39,8 @@ class TableModel<
 	add_data(data: T) {
 		const values = [];
 		for (const h of this.headers) {
-			const key = h.toLowerCase().replaceAll(" ", "_") as KeysOfH<H>;
-			const value = data[key];
+			const key = h.toLowerCase().replaceAll(" ", "_") as KeysOfH<H[]>;
+			const value = typeof data[key] == "number" ? new Number(data[key]) : data[key];
 			values.push(value);
 		}
 		// @ts-expect-error

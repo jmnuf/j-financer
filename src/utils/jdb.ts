@@ -57,8 +57,8 @@ const capitalize = <T extends string>(str: T) => {
 
 type JMetaData = Record<string, NonNullable<unknown> | string | number | null>;
 type DataID<P extends string> = `${P}${number}`;
-type SchemaObj<T> = { parse: (value:unknown) => T, safeParse: (value:unknown) => ({ success: true, data: T } | { success: false, error: { message: string } }) };
-type SchemaType<T extends SchemaObj<any>> = ReturnType<T["parse"]>;
+type SchemaObj<T extends { id: string }> = { parse: (value:unknown) => T, safeParse: (value:unknown) => ({ success: true, data: T } | { success: false, error: { message: string } }) };
+type SchemaType<T extends SchemaObj<{ id: string }>> = ReturnType<T["parse"]>;
 
 export class JDB<S extends SchemaObj<any>, const F extends string, const P extends string, T extends SchemaType<S>, M extends JMetaData | undefined = undefined, TBase extends BaseData<T> = BaseData<T>> {
 	private file: `jdb/${F}.jdb`;
@@ -92,6 +92,7 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 			this.data.set(id, value);
 
 			const inserted = this.data.get(id) as T;
+			this.count += 1;
 			return { ok: true, inserted } as const;
 		} catch (e) {
 			console.error(e);
@@ -194,7 +195,14 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 		const meta = lines.shift()!.split(";").map(v => v.trim());
 		this.count = parseInt(meta[0].substring(1));
 		if (typeof meta[1] === "string" && meta[1].length > 0) {
-			this.meta_data = JSON.parse(meta[1]);
+			const data = JSON.parse(meta[1]);
+			if (!this.meta_data) {
+				// @ts-expect-error
+				this.meta_data = {};
+			}
+			for (const k of Object.keys(data)) {
+				this.meta_data[k] = data[k];
+			}
 		}
 
 		for (const line of lines) {
@@ -222,7 +230,6 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 		const table = new Table<
 			// @ts-expect-error
 			ExtractKeys<T, "id" | SpaceToUnderscore<ArrayT<H>>>,
-			// @ts-expect-error
 			["ID", ...H]
 		>(this._name, "ID", ...headers);
 		const keys = ["id", ...headers.map(v => v.replace(" ", "_").toLowerCase() as DataKey)] as ("id" & DataKey)[];
@@ -239,7 +246,7 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 	}
 
 	// @ts-expect-error
-	declare full_table: () => Table<T, ["ID",...string[]]>;
+	declare full_table: () => Table<T, ["ID",...`${UnderscoreToSpace<Exclude<keyof T, symbol | "id">>}`[]]>;
 
 	get filename() {
 		return this.file;
