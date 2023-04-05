@@ -1,4 +1,6 @@
 import { exists, BaseDirectory as Dir, writeFile, createDir, readTextFile as readFile } from "@tauri-apps/api/fs";
+import Table from "../components/table";
+import { UnderscoreToSpace } from "./more-types";
 
 export type BaseModel = Record<string, string | number | string[] | number[]> & { id: string; };
 export type BaseData<T extends BaseModel> = Omit<T, "id">
@@ -12,9 +14,9 @@ export type CustomIterator<V> = { (): Generator<V, void>; } & {
 	to_array<R>(predicate: FilterMapPredicate<V, R>): R[];
 };
 
-export function createCustomIterator<T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T): CustomIterator<V>;
-export function createCustomIterator<K extends keyof V, T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T, key: K): CustomIterator<V[K]>;
-export function createCustomIterator<const K extends keyof V, T extends Iterable<any> = Iterable<any>, V extends IterValue<T> = IterValue<T>>(data: T, key?: K): CustomIterator<V|V[K]> {
+export function create_custom_iterator<T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T): CustomIterator<V>;
+export function create_custom_iterator<K extends keyof V, T extends Iterable<unknown> = Iterable<unknown>, V extends IterValue<T> = IterValue<T>>(data: T, key: K): CustomIterator<V[K]>;
+export function create_custom_iterator<const K extends keyof V, T extends Iterable<any> = Iterable<any>, V extends IterValue<T> = IterValue<T>>(data: T, key?: K): CustomIterator<V|V[K]> {
 	const generator = function* () {
 		for (const value of data) {
 			if (key == undefined) {
@@ -48,50 +50,84 @@ export function createCustomIterator<const K extends keyof V, T extends Iterable
 	return generator;
 }
 
-export class JDB<T extends BaseModel, const F extends string, const P extends string, TBase extends BaseData<T> = BaseData<T>> {
+const capitalize = <T extends string>(str: T) => {
+	const capital = str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+	return capital as Capitalize<T>;
+};
+
+type JMetaData = Record<string, NonNullable<unknown> | string | number | null>;
+type DataID<P extends string> = `${P}${number}`;
+type SchemaObj<T> = { parse: (value:unknown) => T, safeParse: (value:unknown) => ({ success: true, data: T } | { success: false, error: { message: string } }) };
+type SchemaType<T extends SchemaObj<any>> = ReturnType<T["parse"]>;
+
+export class JDB<S extends SchemaObj<any>, const F extends string, const P extends string, T extends SchemaType<S>, M extends JMetaData | undefined = undefined, TBase extends BaseData<T> = BaseData<T>> {
 	private file: `jdb/${F}.jdb`;
 	private prefix: P;
 	private count: number = 0;
-	private data = new Map<string, T>();
+	private data = new Map<DataID<P>, T>();
+	private _name: Capitalize<F>;
+	private _schema: S;
 
-	constructor(name:F, prefix:P) {
+	meta_data: M;
+
+	constructor(name: F, prefix: P, schema: S);
+	constructor(name: F, prefix: P, schema: S, meta: M);
+	constructor(name: F, prefix: P, schema: S, meta: M = undefined as any) {
+		this._schema = schema;
+		this._name = name.split("-").map(capitalize).join(" ") as Capitalize<F>;
 		this.file = `jdb/${name}.jdb`;
 		this.prefix = prefix;
+		this.meta_data = meta;
 	}
 
 	private create_id(num: number) {
-		return `${this.prefix}${`${num}`.padStart(6, "0")}`;
+		return `${this.prefix}${`${num}`.padStart(6, "0")}` as DataID<P>;
 	}
 
 	insert(data: TBase) {
-		const id = this.create_id(this.count++);
-		// @ts-ignore
-		data.id = id;
-		// @ts-ignore
-		this.data.set(id, data);
+		const id = this.create_id(this.count + 1);
 
-		return this.data.get(id);
+		try {
+			const value:T = this._schema.parse(Object.assign(data, { id }));
+			this.data.set(id, value);
+
+			const inserted = this.data.get(id) as T;
+			return { ok: true, inserted } as const;
+		} catch (e) {
+			console.error(e);
+			return { ok: false, inserted: null, error: e } as const;
+		}
 	}
 
-	retrieve(num: number) {
-		const id = this.create_id(num);
-		return this.data.get(id);
+	retrieve(id: number | DataID<P>) {
+		const data_id = typeof id == "number" ? this.create_id(id) : id;
+		return this.data.get(data_id);
 	}
 
-	holds(num: number) {
-		const id = this.create_id(num);
-		return this.data.has(id);
+	holds(id: number) {
+		const data_id = typeof id == "number" ? this.create_id(id) : id;
+		return this.data.has(data_id);
 	}
 
-	readonly entries = createCustomIterator(this.data);
-	readonly ids = createCustomIterator(this.data, 0);
-	readonly values = createCustomIterator(this.data, 1);
+	find_by(key: Exclude<keyof T, "id">, value: T[typeof key]) {
+		for (const [id, item] of this.entries()) {
+			if (item[key] != value) {
+				continue;
+			}
+			return id;
+		}
+		return -1
+	}
+
+	readonly entries = create_custom_iterator(this.data);
+	readonly ids = create_custom_iterator(this.data, 0);
+	readonly values = create_custom_iterator(this.data, 1);
 	
 	[Symbol.iterator]() {
 		return this.data[Symbol.iterator]()
 	}
 	
-	protected async readFile() {
+	protected async read_file() {
 		try {
 			return await readFile(this.file, { dir: Dir.AppData });
 		} catch (e) {
@@ -100,8 +136,34 @@ export class JDB<T extends BaseModel, const F extends string, const P extends st
 		}
 	}
 
+	private _verify_meta_data(): M | null {
+		if (!this.meta_data) {
+			return null;
+		}
+		const keys = Object.keys(this.meta_data);
+		const data = {} as NonNullable<M>;
+		for (const k of keys) {
+			const value = this.meta_data[k];
+			if (value === undefined) {
+				continue;
+			}
+			data[k] = value;
+		}
+
+		return data;
+	}
+
+	stringify_meta_data() {
+		const meta = this._verify_meta_data();
+		if (!meta || Object.keys(meta).length < 1) {
+			return "";
+		}
+		return JSON.stringify(meta);
+	}
+
 	async update_external() {
-		let contents = `@${this.count}\n`;
+		const meta = this.stringify_meta_data();
+		let contents = `@${this.count}${meta.length == 0 ? meta : `;${meta}`}\n`;
 		for (const [id, data] of this.data.entries()) {
 			contents += `${id};${JSON.stringify(data)}\n`;
 		}
@@ -116,7 +178,7 @@ export class JDB<T extends BaseModel, const F extends string, const P extends st
 	}
 
 	async update_internal() {
-		const contents = await this.readFile();
+		const contents = await this.read_file();
 		if (contents == null) {
 			return false;
 		}
@@ -129,11 +191,17 @@ export class JDB<T extends BaseModel, const F extends string, const P extends st
 		}
 
 		const lines = contents.split("\n");
-		const counter = lines.shift() as string;
-		this.count = parseInt(counter.substring(1));
+		const meta = lines.shift()!.split(";").map(v => v.trim());
+		this.count = parseInt(meta[0].substring(1));
+		if (typeof meta[1] === "string" && meta[1].length > 0) {
+			this.meta_data = JSON.parse(meta[1]);
+		}
 
 		for (const line of lines) {
-			const [id, data_string] = line.split(";", 2);
+			const [id, data_string] = line.split(";").reduce((s, c, i) => {
+				i < 2 ? s[i] = c : s[1] += `;${c}`;
+				return s;
+			}, [this.prefix, ""]).map(v => v.trim()) as [`${P}${number}`, string];
 			const data = JSON.parse(data_string);
 			this.data.set(id, data);
 		}
@@ -141,24 +209,42 @@ export class JDB<T extends BaseModel, const F extends string, const P extends st
 		return true;
 	}
 
+	create_table<
+		H extends UnderscoreToSpace<
+				Exclude<keyof T, number | symbol | "id">
+			>[]
+	>(...headers: H) {
+		type DataKey = Exclude<keyof T, number | symbol>;
+		type ExtractKeys<T, K extends any> = {
+			[Key in Extract<keyof T, K>]: T[Key];
+		};
+		type ArrayT<T extends any[]> = T extends (infer A)[] ? A : never;
+		const table = new Table<
+			// @ts-expect-error
+			ExtractKeys<T, "id" | SpaceToUnderscore<ArrayT<H>>>,
+			// @ts-expect-error
+			["ID", ...H]
+		>(this._name, "ID", ...headers);
+		const keys = ["id", ...headers.map(v => v.replace(" ", "_").toLowerCase() as DataKey)] as ("id" & DataKey)[];
+
+		for (const data of this.values()) {
+			const value = {} as Record<"id" & DataKey, T[DataKey]>;
+			for (const k of keys) {
+				value[k] = data[k];
+			}
+			table.add_data(value as any);
+		}
+
+		return table;
+	}
+
+	// @ts-expect-error
+	declare full_table: () => Table<T, ["ID",...string[]]>;
+
 	get filename() {
 		return this.file;
 	}
 }
-
-export type Artist = {
-	id: `ART${string}`;
-	band_name: string;
-	full_names: string[];
-};
-
-export type ReachSnapshot = {
-	id: `RCH${string}`;
-	artist: string;
-	reach: number;
-	timestamp: number,
-	income: number,
-};
 
 const base_jdb_file_info = <T extends string>(name: T) => {
 	const file_name = `jdb/${name}.jdb` as const;
@@ -177,7 +263,14 @@ const base_jdb_file_info = <T extends string>(name: T) => {
 	return info;
 }
 
-const get_jdb = async <T extends BaseModel, N extends string, P extends string>(name: N, prefix: P) => {
+export function get_jdb<T extends SchemaObj<BaseModel>, N extends string, P extends string>(name: N, prefix: P, schema: T): Promise<JDB<T, N, P, SchemaType<T>>>;
+export function get_jdb<T extends SchemaObj<BaseModel>, N extends string, P extends string, M extends JMetaData>(name: N, prefix: P, schema: T, meta: M): Promise<JDB<T, N, P, SchemaType<T>, M>>;
+export async function get_jdb<
+	T extends SchemaObj<BaseModel>,
+	N extends string,
+	P extends string,
+	M extends JMetaData | undefined = undefined
+>(name: N, prefix: P, schema: T, meta: M = undefined as any) {
 	const file = base_jdb_file_info(name);
 	
 	const exists = await file.exists();
@@ -194,13 +287,9 @@ const get_jdb = async <T extends BaseModel, N extends string, P extends string>(
 		}
 	}
 
-	const jdb = new JDB<T, N, P>(name, prefix);
+	const jdb = new JDB<T, N, P, SchemaType<T>, M>(name, prefix, schema, meta);
 
 	await jdb.update_internal();
 
 	return jdb;
 }
-
-export const artists = await get_jdb<Artist, "artists", "ART">("artists", "ART");
-
-export const reach = await get_jdb<ReachSnapshot, "reach", "RCH">("reach", "RCH");

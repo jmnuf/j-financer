@@ -1,8 +1,9 @@
 // import { invoke } from "@tauri-apps/api/tauri";
 import { PuiComponent, create_app } from "./utils/ui";
-// import { artists, reach } from "./utils/jdb";
-import type { Artist, ReachSnapshot } from "./utils/jdb";
-import Table from "./components/table";
+// import { artists, reach } from "./main.data";
+import type { Artist, ReachSnapshot } from "./utils/schemas";
+import Table, { TableRowItemValue } from "./components/table";
+import { AllStringCasings } from "./utils/more-types";
 
 type AppTables = typeof App.prototype.tables;
 type AppTableNames = keyof AppTables;
@@ -15,7 +16,7 @@ class App extends PuiComponent<typeof App> {
 	private _name;
 	table_names: AppTableNames[];
 	declare active_name: AppTableNames;
-	private active_table;
+	// private active_table;
 
 	constructor(title: string, name: string = "") {
 		super({
@@ -29,10 +30,10 @@ class App extends PuiComponent<typeof App> {
 		this.title = title;
 		this._name = "";
 		this.name = name;
-		const artists = new Table<["ID", "Band_Name", "Full_Names"], Artist>("Artists", "ID", "Band_Name", "Full_Names");
+		const artists = new Table<Artist>("Artists", "ID", "Band Name", "Full Names");
 		this.active_name = "artists";
 
-		const reaches = new Table<["ID", "Artist", "Reach", "Income", "TimeStamp"], ReachSnapshot>("Artist Reach", "ID", "Artist", "Reach", "Income", "TimeStamp");
+		const reaches = new Table<ReachSnapshot>("Artist Reach", "ID", "Artist", "Reach", "Income", "Timestamp");
 
 		this.tables = Object.freeze({
 			artists,
@@ -40,16 +41,17 @@ class App extends PuiComponent<typeof App> {
 		});
 		this.table_names = Object.keys(this.tables) as AppTableNames[];
 		
-		this.active_table = new Table<string[], Record<string, any>>(artists.title, manual, ...artists.headers);
-		this.active_table.rows = artists.rows;
+		// this.active_table = new Table<Record<string, TableRowItemValue>, AllStringCasings<string>>(artists.title, manual, ...artists.headers);
+		// this.active_table.rows = artists.rows;
 	}
 
 	set_active_table(table_name: AppTableNames) {
-		const active = this.tables[table_name];
-		this.active_table.title = active.title;
-		this.active_table.headers = active.headers;
-		this.active_table.rows = active.rows;
+		// const active = this.tables[table_name];
+		// this.active_table.title = active.title;
+		// this.active_table.headers = active.headers;
+		// this.active_table.rows = active.rows;
 		this.active_name = table_name;
+		console.log("Changed to table", table_name, this.active_table);
 	}
 
 	get_table<T extends AppTableNames>(table_name: T) {
@@ -104,6 +106,9 @@ class App extends PuiComponent<typeof App> {
 	}
 
 	get_active_table() {
+		return this.tables[this.active_name];
+	}
+	get active_table() {
 		return this.tables[this.active_name];
 	}
 }
