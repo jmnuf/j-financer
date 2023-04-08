@@ -84,6 +84,10 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 		return `${this.prefix}${`${num}`.padStart(6, "0")}` as DataID<P>;
 	}
 
+	clear() {
+		this.data.clear();
+	}
+
 	insert(data: TBase) {
 		const id = this.create_id(this.count + 1);
 
@@ -118,6 +122,15 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 			return id;
 		}
 		return -1
+	}
+
+	find_through(predicate: (value: T) => boolean) {
+		for (const [id, value] of this.entries()) {
+			if (predicate(value)) {
+				return id;
+			}
+		}
+		return -1;
 	}
 
 	readonly entries = create_custom_iterator(this.data);
@@ -251,6 +264,10 @@ export class JDB<S extends SchemaObj<any>, const F extends string, const P exten
 	get filename() {
 		return this.file;
 	}
+
+	get size() {
+		return this.data.size;
+	}
 }
 
 const base_jdb_file_info = <T extends string>(name: T) => {
@@ -270,14 +287,14 @@ const base_jdb_file_info = <T extends string>(name: T) => {
 	return info;
 }
 
-export function get_jdb<T extends SchemaObj<BaseModel>, N extends string, P extends string>(name: N, prefix: P, schema: T): Promise<JDB<T, N, P, SchemaType<T>>>;
-export function get_jdb<T extends SchemaObj<BaseModel>, N extends string, P extends string, M extends JMetaData>(name: N, prefix: P, schema: T, meta: M): Promise<JDB<T, N, P, SchemaType<T>, M>>;
+export function get_jdb<T extends SchemaObj<BaseModel>, N extends string, P extends string>(name: N, prefix: P, schema: T, load?:boolean): Promise<JDB<T, N, P, SchemaType<T>>>;
+export function get_jdb<T extends SchemaObj<BaseModel>, N extends string, P extends string, M extends JMetaData>(name: N, prefix: P, schema: T, meta: M, load?:boolean): Promise<JDB<T, N, P, SchemaType<T>, M>>;
 export async function get_jdb<
 	T extends SchemaObj<BaseModel>,
 	N extends string,
 	P extends string,
 	M extends JMetaData | undefined = undefined
->(name: N, prefix: P, schema: T, meta: M = undefined as any) {
+>(name: N, prefix: P, schema: T, meta_or_load: M | boolean = true, load_data:boolean = true) {
 	const file = base_jdb_file_info(name);
 	
 	const exists = await file.exists();
@@ -294,7 +311,14 @@ export async function get_jdb<
 		}
 	}
 
+	const should_load = typeof meta_or_load == "boolean" ? meta_or_load : load_data;
+	const meta = (typeof meta_or_load == "object" ? meta_or_load : undefined) as M;
+
 	const jdb = new JDB<T, N, P, SchemaType<T>, M>(name, prefix, schema, meta);
+
+	if (!should_load) {
+		return jdb;
+	}
 
 	await jdb.update_internal();
 

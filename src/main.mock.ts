@@ -17,42 +17,6 @@ export const artists = {
 	}
 };
 
-const create_random_snapshot = () => {
-	// @ts-expect-error
-	const index:number = create_random_snapshot.index ? create_random_snapshot.index : 0;
-	// @ts-expect-error
-	create_random_snapshot.index = index + 1;
-	// @ts-expect-error
-	const timestamp: number = create_random_snapshot.timestamp ?? Date.now() - Math.floor(Math.random() * 100_420_000 + 69_000_000);
-	// @ts-expect-error
-	create_random_snapshot.timestamp = timestamp - Math.floor(Math.random() * 1_000_000 + 1_000);
-
-	const artist_count = artists.data.size;
-	const artist = Array.from(artists.data.keys())[Math.floor(Math.random() * artist_count)];
-
-	return {
-		id: `RCH${`${index}`.padStart(6, "0")}`,
-		artist,
-		income: new Number(Math.floor(Math.random() * 5_000) + 1_000) as number,
-		reach: new Number(Math.floor(Math.random() * 69_000)) as number,
-		timestamp: new Number(timestamp) as number,
-	} as ReachSnapshot;
-};
-const test_data_reaches: ReachSnapshot[] = [];
-for (let i = 0; i < 20; i++) {
-	test_data_reaches.push(create_random_snapshot());
-}
-export const reach = {
-	data: (() => new Map(test_data_reaches.map(v => [v.id, v])))(),
-	full_table: () => {
-		const t = new Table<ReachSnapshot>("Artist Reach", "Artist", "Reach", "Income", "Timestamp");
-		for (const snapshot of test_data_reaches) {
-			t.add_data(snapshot);
-		}
-		return t;
-	}
-};
-
 const create_random_sale = () => {
 	// @ts-expect-error
 	const index:number = create_random_sale.index ? create_random_sale.index : 0;
@@ -95,3 +59,46 @@ export const sales = {
 		return t;
 	}
 };
+
+const reach_id_generator = (function*() {
+	let index = 0;
+	while (true) {
+		const id = `RCH${`${index}`.padStart(6, "0")}`
+		yield id;
+		index += 1;
+	}
+})();
+export const reaches = {
+	data: new Map<string, ReachSnapshot>(),
+	full_table: () => {
+		const t = new Table<ReachSnapshot>("Artist Reach", "Artist", "Reach", "Income", "From Date");
+		for (const snapshot of reaches.data.values()) {
+			t.add_data(snapshot);
+		}
+		return t;
+	}
+};
+
+const sales_reaches_map = new Map<string, string>();
+for (const sale of sales.data.values()) {
+	const { artist, earnings, quantity, from } = sale;
+	const map_id = `${from}-${artist}`;
+	if (!sales_reaches_map.has(map_id)) {
+		const id = reach_id_generator.next().value;
+		sales_reaches_map.set(map_id, id);
+		reaches.data.set(id, {
+			id,
+			from_date: from,
+			artist,
+			income: earnings,
+			reach: quantity
+		});
+		continue;
+	}
+
+	const id = sales_reaches_map.get(map_id)!;
+
+	const reach = reaches.data.get(id)!;
+	reach.reach += quantity;
+	reach.income += earnings;
+}

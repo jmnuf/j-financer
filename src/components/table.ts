@@ -48,6 +48,13 @@ class TableModel<
 	}
 
 	add_row(...row: SizedArr<TableRowItemValue, L>) {
+		// TODO: Remove when peasy allows number type in iterators
+		for (let i = 0; i < row.length; i += 1) {
+			if (typeof row[i] !== "number") {
+				continue;
+			}
+			row[i] = new Number(row[i]) as TableRowItemValue;
+		}
 		this.rows.push(row);
 	}
 }

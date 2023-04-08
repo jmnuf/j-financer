@@ -5,7 +5,7 @@ import type { Artist, ReachSnapshot } from "./utils/schemas";
 import Table, { TableRowItemValue } from "./components/table";
 import { AllStringCasings } from "./utils/more-types";
 // import { artists as artists_data, reach as reaches_data, sales as sales_data } from "./main.mock";
-import { artists as artists_data, reach as reaches_data, sales as sales_data } from "./main.data";
+import { artists as artists_data, reaches as reaches_data, sales as sales_data } from "./main.data";
 
 type AppTables = typeof App.prototype.tables;
 type AppTableNames = keyof AppTables;
@@ -82,7 +82,7 @@ class App extends PuiComponent<typeof App> {
 
 	add_reach_snapshot(snapshot: ReachSnapshot) {
 		const reaches = this.tables.reaches;
-		return reaches.add_row(snapshot.id, snapshot.artist, snapshot.reach, snapshot.income, snapshot.timestamp);
+		return reaches.add_row(snapshot.id, snapshot.artist, snapshot.reach, snapshot.from_date, snapshot.income);
 	}
 
 	get is_artists_active() {

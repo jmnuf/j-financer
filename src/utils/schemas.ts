@@ -12,7 +12,7 @@ export const reach_schema = z.object({
 	id: z.string(),
 	artist: z.string(),
 	reach: z.number(),
-	timestamp: z.number(),
+	from_date: z.string(),
 	income: z.number(),
 });
 
@@ -23,6 +23,7 @@ export const sale_schema = z.object({
 	id: z.string(),
 	sale_month: z.string(),
 	report_date: z.string(),
+	from: z.string(),
 	store: z.string(),
 	artist: z.string(),
 	title: z.string(),
