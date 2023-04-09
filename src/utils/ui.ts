@@ -11,8 +11,8 @@ export const config = {
 }
 
 export type PUI_Template = string | HTMLTemplateElement;
-type Class = { new(...args: any[]): unknown };
-type ClassInstance<C extends Class> = C extends { new(...args: any[]): infer T; } ? T : never;
+export type Class = { new(...args: any[]): unknown };
+export type ClassInstance<C extends Class> = C extends { new(...args: any[]): infer T; } ? T : never;
 
 type PUI_HTMLComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: HTMLTemplateElement; };
 type PUI_JSComponent<C extends Class | unknown> = (C extends Class ? C : Class) & { template: string; };
@@ -57,11 +57,20 @@ export function create_app<T extends {}>(id: string, model: T, manual_updates:bo
 	return [view, model, elem] as const;
 }
 
-export function setup_component<C extends Class>(Cls: C, template: `#${string}`, remove?:boolean): PUI_HTMLComponent<C>;
+export function setup_component<C extends Class>(Cls: C, template: `#${string}` | HTMLTemplateElement, remove?:boolean): PUI_HTMLComponent<C>;
 export function setup_component<C extends Class>(Cls: C, template: string): PUI_JSComponent<C>;
-export function setup_component<C extends Class>(Cls: C, template:string, remove = true): PUIComponent<C> {
+export function setup_component<C extends Class>(Cls: C, template:string | HTMLTemplateElement, remove = true): PUIComponent<C> {
 	// @ts-expect-error
 	const Component: PUIComponent<C> = Cls;
+
+	if (template instanceof HTMLTemplateElement) {
+		Component.template = template;
+		if (remove) {
+			template.remove();
+		}
+		return Component;
+	}
+
 	if (template.startsWith('#')) {
 		const elem = document.querySelector(template);
 		if (!(elem instanceof HTMLTemplateElement)) {
@@ -107,7 +116,7 @@ export function update_on_keys<T extends Record<string, any>, Keys extends (keyo
 
 export type BasePuiComponentParams<C extends Class> = {
 	readonly Cls: C,
-	readonly template: `#${string}`;
+	readonly template: `#${string}` | HTMLTemplateElement;
 	readonly is_app?: boolean,
 	readonly observe?: {
 		readonly keys: readonly Exclude<keyof ClassInstance<C>, symbol>[];
@@ -116,7 +125,7 @@ export type BasePuiComponentParams<C extends Class> = {
 
 }
 
-export class PuiComponent<C extends Class> {
+export abstract class PuiComponent<C extends Class> {
 	declare static readonly template: HTMLTemplateElement;
 	declare private readonly template: HTMLTemplateElement;
 
@@ -131,7 +140,7 @@ export class PuiComponent<C extends Class> {
 		if (!observe) {
 			return;
 		}
-		
+
 		for (const key of observe.keys) {
 			const private_key = `_${key}` as Exclude<keyof typeof this, symbol>;
 			let set, get;
