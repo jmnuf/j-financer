@@ -117,9 +117,9 @@ export type BasePuiComponentParams<C extends Class> = {
 }
 
 export class PuiComponent<C extends Class> {
-	static template: HTMLTemplateElement;
-	// @ts-expect-error
-	private template: HTMLTemplateElement;
+	declare static readonly template: HTMLTemplateElement;
+	declare private readonly template: HTMLTemplateElement;
+
 	constructor({ Cls, template, observe, is_app }: BasePuiComponentParams<C>) {
 		if ("template" in Cls && Cls.template instanceof HTMLTemplateElement) {
 			this.template = Cls.template;
@@ -131,8 +131,9 @@ export class PuiComponent<C extends Class> {
 		if (!observe) {
 			return;
 		}
+		
 		for (const key of observe.keys) {
-			const private_key = `_${key}`;
+			const private_key = `_${key}` as Exclude<keyof typeof this, symbol>;
 			let set, get;
 			if (private_key in this) {
 				const desc = Object.getOwnPropertyDescriptor(this, private_key)!;
@@ -148,13 +149,12 @@ export class PuiComponent<C extends Class> {
 				Object.defineProperty(this, private_key, {
 					value: 0,
 					writable: true,
-					configurable: true,
+					configurable: false,
 					enumerable: false,
 				});
 			}
 			if (!set) {
-				set = (value: unknown) => {
-					// @ts-ignore
+				set = (value: any) => {
 					this[private_key] = value;
 					UI.update();
 				}
@@ -166,7 +166,6 @@ export class PuiComponent<C extends Class> {
 				}
 			}
 			if (!get) {
-				// @ts-ignore
 				get = () => this[private_key];
 			}
 			console.log(`Base key: "${key}"`);
