@@ -1,5 +1,5 @@
 import { SpaceToUnderscore, UnderscoreToSpace, AllStringCasings } from "../utils/more-types";
-import { PuiComponent, setup_component } from "../utils/ui";
+import { PuiComponent } from "../utils/ui";
 
 export type TableRowItemValue = string | number | string[] | number[];
 export type TableRow<L extends number> = SizedArr<TableRowItemValue, L>;
